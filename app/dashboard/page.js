@@ -40,6 +40,10 @@ export default function DashboardPage() {
         );
     };
 
+    const deleteTask = (id) => {
+        setTasks(tasks.filter(task => task.id !== id));
+    };
+
     const filteredTasks = tasks.filter((task) => {
         const priorityMatch =
             filter === "all" ? true : task.priority === filter;
@@ -55,9 +59,7 @@ export default function DashboardPage() {
     });
 
     const sortedTasks = [...filteredTasks].sort((a, b) => {
-        if (sortType === "newest") {
-            return b.id - a.id;
-        }
+        if (sortType === "newest") return b.id - a.id;
 
         if (sortType === "due") {
             if (!a.dueDate) return 1;
@@ -76,26 +78,26 @@ export default function DashboardPage() {
 
     return (
         <div className="p-10 max-w-2xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+            <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
 
             {/* Task Input */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 bg-gray-50 p-3 rounded-xl border">
                 <input
-                    className="border px-3 py-2 rounded w-full"
+                    className="px-3 py-2 rounded-lg w-full bg-white border"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Task title"
+                    placeholder="What needs to be done?"
                 />
 
                 <input
-                    className="border px-3 py-2 rounded"
+                    className="px-3 py-2 rounded-lg border bg-white"
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                 />
 
                 <select
-                    className="border px-3 py-2 rounded"
+                    className="px-3 py-2 rounded-lg border bg-white"
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
                 >
@@ -105,101 +107,42 @@ export default function DashboardPage() {
                 </select>
 
                 <button
-                    className="bg-black text-white px-4 rounded"
+                    className="bg-black text-white px-4 rounded-lg hover:opacity-80 transition"
                     onClick={addTask}
                 >
                     Add
                 </button>
             </div>
 
-            {/* Priority Filter */}
-            <div className="flex gap-2 mt-4">
-                {["all", "high", "medium", "low"].map((value) => (
-                    <button
-                        key={value}
-                        onClick={() => setFilter(value)}
-                        className={`px-3 py-1 rounded ${filter === value
-                            ? "bg-black text-white"
-                            : "bg-gray-200"
-                            }`}
-                    >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </button>
-                ))}
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-2 mt-2">
-                {["all", "active", "completed"].map((value) => (
-                    <button
-                        key={value}
-                        onClick={() => setStatusFilter(value)}
-                        className={`px-3 py-1 rounded ${statusFilter === value
-                            ? "bg-black text-white"
-                            : "bg-gray-200"
-                            }`}
-                    >
-                        {value.charAt(0).toUpperCase() + value.slice(1)}
-                    </button>
-                ))}
-            </div>
-
-            <div className="flex gap-2 mt-2">
-                <button
-                    onClick={() => setSortType("newest")}
-                    className={`px-3 py-1 rounded ${sortType === "newest" ? "bg-black text-white" : "bg-gray-200"
-                        }`}
-                >
-                    Newest
-                </button>
-
-                <button
-                    onClick={() => setSortType("due")}
-                    className={`px-3 py-1 rounded ${sortType === "due" ? "bg-black text-white" : "bg-gray-200"
-                        }`}
-                >
-                    Due Date
-                </button>
-
-                <button
-                    onClick={() => setSortType("priority")}
-                    className={`px-3 py-1 rounded ${sortType === "priority" ? "bg-black text-white" : "bg-gray-200"
-                        }`}
-                >
-                    Priority
-                </button>
-            </div>
-
             {/* Task List */}
-            <div className="mt-6 space-y-2">
+            <div className="mt-6 space-y-3">
                 {sortedTasks.map((task) => (
                     <div
                         key={task.id}
-                        className="border p-3 rounded flex justify-between items-center"
+                        className="bg-white border rounded-xl p-4 flex justify-between items-center shadow-sm hover:shadow-md transition"
                     >
                         <div className="flex flex-col">
                             <span
-                                className={`${task.completed ? "line-through text-gray-400" : ""
+                                className={`font-medium ${task.completed ? "line-through text-gray-400" : ""
                                     }`}
                             >
                                 {task.title}
                             </span>
 
                             {task.dueDate && (
-                                <span className="text-xs text-gray-400">
-                                    Due:{" "}
-                                    {new Date(task.dueDate).toLocaleDateString()}
+                                <span className="text-xs text-gray-400 mt-1">
+                                    Due {new Date(task.dueDate).toLocaleDateString()}
                                 </span>
                             )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <span
-                                className={`text-xs px-2 py-1 rounded ${task.priority === "high"
-                                    ? "bg-red-100"
-                                    : task.priority === "medium"
-                                        ? "bg-yellow-100"
-                                        : "bg-green-100"
+                                className={`text-xs px-2 py-1 rounded-lg ${task.priority === "high"
+                                        ? "bg-red-100 text-red-600"
+                                        : task.priority === "medium"
+                                            ? "bg-yellow-100 text-yellow-700"
+                                            : "bg-green-100 text-green-600"
                                     }`}
                             >
                                 {task.priority}
@@ -207,17 +150,28 @@ export default function DashboardPage() {
 
                             <button
                                 onClick={() => toggleTask(task.id)}
-                                className="text-sm"
+                                className={`text-sm w-7 h-7 rounded-lg border flex items-center justify-center transition
+                                    ${task.completed
+                                        ? "bg-black text-white"
+                                        : "hover:bg-gray-100"
+                                    }`}
                             >
                                 ✓
+                            </button>
+
+                            <button
+                                onClick={() => deleteTask(task.id)}
+                                className="text-sm text-gray-400 hover:text-black transition"
+                            >
+                                ✕
                             </button>
                         </div>
                     </div>
                 ))}
 
-                {filteredTasks.length === 0 && (
-                    <div className="text-gray-400 text-sm">
-                        No tasks found
+                {sortedTasks.length === 0 && (
+                    <div className="text-gray-400 text-sm text-center py-10">
+                        No tasks yet 😌
                     </div>
                 )}
             </div>
