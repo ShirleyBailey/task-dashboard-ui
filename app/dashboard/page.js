@@ -1,160 +1,87 @@
 "use client";
-import { useEffect, useState } from "react";
-import {
-    DndContext,
-    closestCenter,
-} from "@dnd-kit/core";
 
-import {
-    SortableContext,
-    verticalListSortingStrategy,
-    useSortable,
-    arrayMove,
-} from "@dnd-kit/sortable";
+import { useState } from "react";
 
-import { CSS } from "@dnd-kit/utilities";
-
-function SortableItem({ task, toggleTask, deleteTask }) {
-    const {
-        attributes,
-        listeners,
-        setNodeRef,
-        transform,
-        transition,
-    } = useSortable({ id: task.id });
-
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-    };
-
-    return (
-        <div
-            ref={setNodeRef}
-            style={style}
-            className="border rounded-lg p-4 flex justify-between items-center shadow-sm bg-white"
-        >
-            <div
-                className="flex items-center gap-3 cursor-grab"
-                {...attributes}
-                {...listeners}
-            >
-                <button
-                    onClick={() => toggleTask(task)}
-                    className={`w-5 h-5 rounded border flex items-center justify-center
-            ${task.completed ? "bg-black text-white" : ""}
-          `}
-                >
-                    {task.completed && "✓"}
-                </button>
-
-                <div className="flex flex-col">
-                    <span
-                        className={`${task.completed ? "line-through text-gray-400" : ""
-                            }`}
-                    >
-                        {task.title}
-                    </span>
-
-                    {task.dueDate && (
-                        <span className="text-xs text-gray-400">
-                            Due: {new Date(task.dueDate).toLocaleDateString()}
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            <button
-                onClick={() => deleteTask(task)}
-                className="text-sm text-red-500"
-            >
-                Delete
-            </button>
-        </div>
-    );
-}
-
-export default function Dashboard() {
-    const [dueDate, setDueDate] = useState("");
-    const [tasks, setTasks] = useState([]);
+export default function DashboardPage() {
     const [title, setTitle] = useState("");
+    const [dueDate, setDueDate] = useState("");
     const [priority, setPriority] = useState("medium");
+
+    const [tasks, setTasks] = useState([]);
+
     const [filter, setFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [sortType, setSortType] = useState("newest");
 
-    const loadTasks = async () => {
-        const res = await fetch("/api/tasks");
-        const data = await res.json();
+    const addTask = () => {
+        if (!title.trim()) return;
 
-        const sorted = data.sort((a, b) => a.order - b.order);
-        setTasks(sorted);
-    };
+        const newTask = {
+            id: Date.now(),
+            title,
+            dueDate,
+            priority,
+            completed: false,
+        };
 
-    const addTask = async () => {
-        if (!title) return;
-
-        await fetch("/api/tasks", {
-            method: "POST",
-            body: JSON.stringify({ title, dueDate, priority }),
-        });
-
+        setTasks([newTask, ...tasks]);
         setTitle("");
         setDueDate("");
         setPriority("medium");
-        loadTasks();
     };
 
-    const toggleTask = async (task) => {
-        await fetch(`/api/tasks/${task.id}`, {
-            method: "PATCH",
-        });
-
-        loadTasks();
+    const toggleTask = (id) => {
+        setTasks(
+            tasks.map((task) =>
+                task.id === id
+                    ? { ...task, completed: !task.completed }
+                    : task
+            )
+        );
     };
 
-    const deleteTask = async (task) => {
-        await fetch(`/api/tasks/${task.id}`, {
-            method: "DELETE",
-        });
+    const filteredTasks = tasks.filter((task) => {
+        const priorityMatch =
+            filter === "all" ? true : task.priority === filter;
 
-        loadTasks();
-    };
+        const statusMatch =
+            statusFilter === "all"
+                ? true
+                : statusFilter === "completed"
+                    ? task.completed
+                    : !task.completed;
 
-    useEffect(() => {
-        loadTasks();
-    }, []);
+        return priorityMatch && statusMatch;
+    });
 
-    const handleDragEnd = async (event) => {
-        const { active, over } = event;
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
+        if (sortType === "newest") {
+            return b.id - a.id;
+        }
 
-        if (!over || active.id === over.id) return;
+        if (sortType === "due") {
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
 
-        const oldIndex = tasks.findIndex(t => t.id === active.id);
-        const newIndex = tasks.findIndex(t => t.id === over.id);
+            return new Date(a.dueDate) - new Date(b.dueDate);
+        }
 
-        const newTasks = arrayMove(tasks, oldIndex, newIndex)
-            .map((task, index) => ({
-                ...task,
-                order: index + 1,
-            }));
+        if (sortType === "priority") {
+            const order = { high: 0, medium: 1, low: 2 };
+            return order[a.priority] - order[b.priority];
+        }
 
-        setTasks(newTasks);
-
-        await fetch("/api/tasks/reorder", {
-            method: "POST",
-            body: JSON.stringify({ tasks: newTasks }),
-        });
-    };
-
+        return 0;
+    });
 
     return (
         <div className="p-10 max-w-2xl mx-auto">
-            <h1 className="text-3xl font-bold mb-6">
-                Task Dashboard 😏🔥
-            </h1>
+            <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
+            {/* Task Input */}
             <div className="flex gap-2">
                 <input
-                    className="border px-3 py-2 rounded"
+                    className="border px-3 py-2 rounded w-full"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder="Task title"
@@ -185,65 +112,115 @@ export default function Dashboard() {
                 </button>
             </div>
 
+            {/* Priority Filter */}
             <div className="flex gap-2 mt-4">
+                {["all", "high", "medium", "low"].map((value) => (
+                    <button
+                        key={value}
+                        onClick={() => setFilter(value)}
+                        className={`px-3 py-1 rounded ${filter === value
+                            ? "bg-black text-white"
+                            : "bg-gray-200"
+                            }`}
+                    >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                    </button>
+                ))}
+            </div>
+
+            {/* Status Filter */}
+            <div className="flex gap-2 mt-2">
+                {["all", "active", "completed"].map((value) => (
+                    <button
+                        key={value}
+                        onClick={() => setStatusFilter(value)}
+                        className={`px-3 py-1 rounded ${statusFilter === value
+                            ? "bg-black text-white"
+                            : "bg-gray-200"
+                            }`}
+                    >
+                        {value.charAt(0).toUpperCase() + value.slice(1)}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex gap-2 mt-2">
                 <button
-                    onClick={() => setFilter("all")}
-                    className={`px-3 py-1 rounded ${filter === "all" ? "bg-black text-white" : "bg-gray-200"
+                    onClick={() => setSortType("newest")}
+                    className={`px-3 py-1 rounded ${sortType === "newest" ? "bg-black text-white" : "bg-gray-200"
                         }`}
                 >
-                    All
+                    Newest
                 </button>
 
                 <button
-                    onClick={() => setFilter("high")}
-                    className={`px-3 py-1 rounded ${filter === "high" ? "bg-black text-white" : "bg-gray-200"
+                    onClick={() => setSortType("due")}
+                    className={`px-3 py-1 rounded ${sortType === "due" ? "bg-black text-white" : "bg-gray-200"
                         }`}
                 >
-                    High
+                    Due Date
                 </button>
 
                 <button
-                    onClick={() => setFilter("medium")}
-                    className={`px-3 py-1 rounded ${filter === "medium" ? "bg-black text-white" : "bg-gray-200"
+                    onClick={() => setSortType("priority")}
+                    className={`px-3 py-1 rounded ${sortType === "priority" ? "bg-black text-white" : "bg-gray-200"
                         }`}
                 >
-                    Medium
-                </button>
-
-                <button
-                    onClick={() => setFilter("low")}
-                    className={`px-3 py-1 rounded ${filter === "low" ? "bg-black text-white" : "bg-gray-200"
-                        }`}
-                >
-                    Low
+                    Priority
                 </button>
             </div>
-            <DndContext
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-            >
-                <SortableContext
-                    items={tasks.map(t => t.id)}
-                    strategy={verticalListSortingStrategy}
-                >
-                    <div className="space-y-3">
-                        {tasks
-                            .filter((task) => {
-                                if (filter === "all") return true;
-                                return task.priority === filter;
-                            })
-                            .map((task) => (
-                                <SortableItem
-                                    key={task.id}
-                                    task={task}
-                                    toggleTask={toggleTask}
-                                    deleteTask={deleteTask}
-                                />
-                            ))}
+
+            {/* Task List */}
+            <div className="mt-6 space-y-2">
+                {sortedTasks.map((task) => (
+                    <div
+                        key={task.id}
+                        className="border p-3 rounded flex justify-between items-center"
+                    >
+                        <div className="flex flex-col">
+                            <span
+                                className={`${task.completed ? "line-through text-gray-400" : ""
+                                    }`}
+                            >
+                                {task.title}
+                            </span>
+
+                            {task.dueDate && (
+                                <span className="text-xs text-gray-400">
+                                    Due:{" "}
+                                    {new Date(task.dueDate).toLocaleDateString()}
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <span
+                                className={`text-xs px-2 py-1 rounded ${task.priority === "high"
+                                    ? "bg-red-100"
+                                    : task.priority === "medium"
+                                        ? "bg-yellow-100"
+                                        : "bg-green-100"
+                                    }`}
+                            >
+                                {task.priority}
+                            </span>
+
+                            <button
+                                onClick={() => toggleTask(task.id)}
+                                className="text-sm"
+                            >
+                                ✓
+                            </button>
+                        </div>
                     </div>
-                </SortableContext>
-            </DndContext>
+                ))}
+
+                {filteredTasks.length === 0 && (
+                    <div className="text-gray-400 text-sm">
+                        No tasks found
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
-

@@ -2,13 +2,12 @@ import "./globals.css";
 
 export const metadata = {
   title: "Task App",
-  description: "My Dashboard",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>
+      <body className="min-h-screen bg-white">
         {children}
       </body>
     </html>
