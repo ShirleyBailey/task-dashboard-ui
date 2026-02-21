@@ -1,25 +1,37 @@
 # Task Dashboard
 
+A lightweight task management dashboard built with Next.js and Tailwind CSS.
+
 ## Overview
-Task management dashboard built with Next.js, Tailwind CSS, and Prisma.  
-The project demonstrates API design, basic state management, and backend integration patterns.
+
+This project is a minimal task dashboard designed to demonstrate frontend structure, UI composition, and basic API architecture.  
+The focus of the project is clarity, maintainability, and clean component organization rather than feature completeness.
 
 ## Tech Stack
-- Next.js (App Router)
+
+- Next.js
 - Tailwind CSS
-- Prisma
-- PostgreSQL (or your DB)
+- TypeScript
+- API Routes
 
 ## Features
-- Task creation
-- Priority selection
-- Date handling
-- API routes
-- Database integration
 
-## How to Run
+- Dashboard layout
+- Task-oriented UI structure
+- Component-based design
+- Responsive styling
+
+## Purpose
+
+This project was created as a demonstration sample to showcase:
+
+- Application structure
+- UI architecture
+- Code organization
+- Developer workflow
+
+## Running the Project
 
 ```bash
 npm install
-npx prisma generate
 npm run dev
