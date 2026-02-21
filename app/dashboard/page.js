@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function DashboardPage() {
     const [title, setTitle] = useState("");
@@ -12,6 +12,20 @@ export default function DashboardPage() {
     const [filter, setFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
     const [sortType, setSortType] = useState("newest");
+
+    /* ✅ 1. 최초 로딩 시 저장된 데이터 불러오기 */
+    useEffect(() => {
+        const savedTasks = localStorage.getItem("tasks");
+
+        if (savedTasks) {
+            setTasks(JSON.parse(savedTasks));
+        }
+    }, []);
+
+    /* ✅ 2. tasks 변경될 때마다 저장 */
+    useEffect(() => {
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    }, [tasks]);
 
     const addTask = () => {
         if (!title.trim()) return;
@@ -38,10 +52,6 @@ export default function DashboardPage() {
                     : task
             )
         );
-    };
-
-    const deleteTask = (id) => {
-        setTasks(tasks.filter(task => task.id !== id));
     };
 
     const filteredTasks = tasks.filter((task) => {
@@ -78,26 +88,25 @@ export default function DashboardPage() {
 
     return (
         <div className="p-10 max-w-2xl mx-auto">
-            <h1 className="text-2xl font-semibold mb-6">Dashboard</h1>
+            <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-            {/* Task Input */}
-            <div className="flex gap-2 bg-gray-50 p-3 rounded-xl border">
+            <div className="flex gap-2">
                 <input
-                    className="px-3 py-2 rounded-lg w-full bg-white border"
+                    className="border px-3 py-2 rounded w-full"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="What needs to be done?"
+                    placeholder="Task title"
                 />
 
                 <input
-                    className="px-3 py-2 rounded-lg border bg-white"
+                    className="border px-3 py-2 rounded"
                     type="date"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                 />
 
                 <select
-                    className="px-3 py-2 rounded-lg border bg-white"
+                    className="border px-3 py-2 rounded"
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
                 >
@@ -107,73 +116,69 @@ export default function DashboardPage() {
                 </select>
 
                 <button
-                    className="bg-black text-white px-4 rounded-lg hover:opacity-80 transition"
+                    className="bg-black text-white px-4 rounded"
                     onClick={addTask}
                 >
                     Add
                 </button>
             </div>
 
-            {/* Task List */}
-            <div className="mt-6 space-y-3">
+            {/* 필터 UI 그대로 */}
+            <div className="flex gap-2 mt-4">
+                {["all", "high", "medium", "low"].map((value) => (
+                    <button
+                        key={value}
+                        onClick={() => setFilter(value)}
+                        className={`px-3 py-1 rounded ${
+                            filter === value
+                                ? "bg-black text-white"
+                                : "bg-gray-200"
+                        }`}
+                    >
+                        {value}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex gap-2 mt-2">
+                {["all", "active", "completed"].map((value) => (
+                    <button
+                        key={value}
+                        onClick={() => setStatusFilter(value)}
+                        className={`px-3 py-1 rounded ${
+                            statusFilter === value
+                                ? "bg-black text-white"
+                                : "bg-gray-200"
+                        }`}
+                    >
+                        {value}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex gap-2 mt-2">
+                <button onClick={() => setSortType("newest")}>Newest</button>
+                <button onClick={() => setSortType("due")}>Due</button>
+                <button onClick={() => setSortType("priority")}>Priority</button>
+            </div>
+
+            <div className="mt-6 space-y-2">
                 {sortedTasks.map((task) => (
                     <div
                         key={task.id}
-                        className="bg-white border rounded-xl p-4 flex justify-between items-center shadow-sm hover:shadow-md transition"
+                        className="border p-3 rounded flex justify-between"
                     >
-                        <div className="flex flex-col">
-                            <span
-                                className={`font-medium ${task.completed ? "line-through text-gray-400" : ""
-                                    }`}
-                            >
-                                {task.title}
-                            </span>
+                        <span
+                            className={task.completed ? "line-through" : ""}
+                        >
+                            {task.title}
+                        </span>
 
-                            {task.dueDate && (
-                                <span className="text-xs text-gray-400 mt-1">
-                                    Due {new Date(task.dueDate).toLocaleDateString()}
-                                </span>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <span
-                                className={`text-xs px-2 py-1 rounded-lg ${task.priority === "high"
-                                        ? "bg-red-100 text-red-600"
-                                        : task.priority === "medium"
-                                            ? "bg-yellow-100 text-yellow-700"
-                                            : "bg-green-100 text-green-600"
-                                    }`}
-                            >
-                                {task.priority}
-                            </span>
-
-                            <button
-                                onClick={() => toggleTask(task.id)}
-                                className={`text-sm w-7 h-7 rounded-lg border flex items-center justify-center transition
-                                    ${task.completed
-                                        ? "bg-black text-white"
-                                        : "hover:bg-gray-100"
-                                    }`}
-                            >
-                                ✓
-                            </button>
-
-                            <button
-                                onClick={() => deleteTask(task.id)}
-                                className="text-sm text-gray-400 hover:text-black transition"
-                            >
-                                ✕
-                            </button>
-                        </div>
+                        <button onClick={() => toggleTask(task.id)}>
+                            ✓
+                        </button>
                     </div>
                 ))}
-
-                {sortedTasks.length === 0 && (
-                    <div className="text-gray-400 text-sm text-center py-10">
-                        No tasks yet 😌
-                    </div>
-                )}
             </div>
         </div>
     );
