@@ -34,8 +34,17 @@ export async function POST(req) {
     data: {
       title: body.title,
       order: lastTask ? lastTask.order + 1 : 1,
+      dueDate: body.dueDate ? new Date(body.dueDate) : null,
     },
   });
 
   return Response.json(task);
 }
+const task = await prisma.task.create({
+  data: {
+    title: body.title,
+    order: lastTask ? lastTask.order + 1 : 1,
+    dueDate: body.dueDate ? new Date(body.dueDate) : null,
+    priority: body.priority || "medium",
+  },
+});
