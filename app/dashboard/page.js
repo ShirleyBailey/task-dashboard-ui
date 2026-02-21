@@ -1,20 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-export default function DashboardPage() {
+export default function Page() {
+  const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("medium");
 
-  const [tasks, setTasks] = useState([]);
-
-  const [filter, setFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sortType, setSortType] = useState("newest");
 
-  const [editingId, setEditingId] = useState(null);
-  const [editingText, setEditingText] = useState("");
+  /* ---------------- LOAD FROM LOCALSTORAGE ---------------- */
+
+  useEffect(() => {
+    const storedTasks = localStorage.getItem("tasks");
+
+    if (storedTasks) {
+      setTasks(JSON.parse(storedTasks));
+    }
+  }, []);
+
+  /* ---------------- SAVE TO LOCALSTORAGE ---------------- */
+
+  useEffect(() => {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+  }, [tasks]);
+
+  /* ---------------- TASK ACTIONS ---------------- */
 
   const addTask = () => {
     if (!title.trim()) return;
@@ -41,75 +54,39 @@ export default function DashboardPage() {
     );
   };
 
-  const startEditing = (task) => {
-    setEditingId(task.id);
-    setEditingText(task.title);
+  const deleteTask = (id) => {
+    setTasks(tasks.filter((task) => task.id !== id));
   };
 
-  const saveEdit = (id) => {
-    if (!editingText.trim()) {
-      setEditingId(null);
-      return;
-    }
-
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, title: editingText } : task
-      )
-    );
-
-    setEditingId(null);
-  };
+  /* ---------------- FILTER LOGIC ---------------- */
 
   const filteredTasks = tasks.filter((task) => {
-    const priorityMatch =
-      filter === "all" ? true : task.priority === filter;
+    if (priorityFilter !== "all" && task.priority !== priorityFilter)
+      return false;
 
-    const statusMatch =
-      statusFilter === "all"
-        ? true
-        : statusFilter === "completed"
-        ? task.completed
-        : !task.completed;
+    if (statusFilter === "active" && task.completed) return false;
+    if (statusFilter === "completed" && !task.completed) return false;
 
-    return priorityMatch && statusMatch;
+    return true;
   });
 
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    if (sortType === "newest") {
-      return b.id - a.id;
-    }
-
-    if (sortType === "due") {
-      if (!a.dueDate) return 1;
-      if (!b.dueDate) return -1;
-
-      return new Date(a.dueDate) - new Date(b.dueDate);
-    }
-
-    if (sortType === "priority") {
-      const order = { high: 0, medium: 1, low: 2 };
-      return order[a.priority] - order[b.priority];
-    }
-
-    return 0;
-  });
+  /* ---------------- UI ---------------- */
 
   return (
-    <div className="p-10 max-w-2xl mx-auto">
+    <div className="p-10 max-w-3xl">
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 mb-4">
         <input
           className="border px-3 py-2 rounded w-full"
+          placeholder="Task title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Task title"
         />
 
         <input
-          className="border px-3 py-2 rounded"
           type="date"
+          className="border px-3 py-2 rounded"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
         />
@@ -125,120 +102,82 @@ export default function DashboardPage() {
         </select>
 
         <button
-          className="bg-black text-white px-4 rounded"
           onClick={addTask}
+          className="bg-black text-white px-4 rounded"
         >
           Add
         </button>
       </div>
 
-      <div className="flex gap-2 mt-4">
-        {["all", "high", "medium", "low"].map((value) => (
+      <div className="flex gap-2 mb-4">
+        {["all", "high", "medium", "low"].map((p) => (
           <button
-            key={value}
-            onClick={() => setFilter(value)}
-            className={`px-3 py-1 rounded ${
-              filter === value
-                ? "bg-black text-white"
-                : "bg-gray-200"
+            key={p}
+            onClick={() => setPriorityFilter(p)}
+            className={`px-3 py-1 rounded border ${
+              priorityFilter === p ? "bg-black text-white" : ""
             }`}
           >
-            {value}
+            {p}
           </button>
         ))}
       </div>
 
-      <div className="flex gap-2 mt-2">
-        {["all", "active", "completed"].map((value) => (
+      <div className="flex gap-2 mb-6">
+        {["all", "active", "completed"].map((s) => (
           <button
-            key={value}
-            onClick={() => setStatusFilter(value)}
-            className={`px-3 py-1 rounded ${
-              statusFilter === value
-                ? "bg-black text-white"
-                : "bg-gray-200"
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`px-3 py-1 rounded border ${
+              statusFilter === s ? "bg-black text-white" : ""
             }`}
           >
-            {value}
+            {s}
           </button>
         ))}
       </div>
 
-      <div className="flex gap-2 mt-2">
-        {["newest", "due", "priority"].map((value) => (
-          <button
-            key={value}
-            onClick={() => setSortType(value)}
-            className={`px-3 py-1 rounded ${
-              sortType === value
-                ? "bg-black text-white"
-                : "bg-gray-200"
-            }`}
-          >
-            {value}
-          </button>
-        ))}
-      </div>
+      <div className="space-y-2">
+        {filteredTasks.length === 0 && (
+          <p className="text-gray-400">No tasks found</p>
+        )}
 
-      <div className="mt-6 space-y-2">
-        {sortedTasks.map((task) => (
+        {filteredTasks.map((task) => (
           <div
             key={task.id}
-            className="border p-3 rounded flex justify-between items-center animate-fade"
+            className="border rounded p-3 flex justify-between items-center"
           >
-            <div className="flex flex-col w-full">
-              {editingId === task.id ? (
-                <input
-                  className="border px-2 py-1 rounded"
-                  value={editingText}
-                  autoFocus
-                  onChange={(e) => setEditingText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") saveEdit(task.id);
-                    if (e.key === "Escape") setEditingId(null);
-                  }}
-                  onBlur={() => saveEdit(task.id)}
-                />
-              ) : (
-                <span
-                  onDoubleClick={() => startEditing(task)}
-                  className={`cursor-pointer ${
-                    task.completed
-                      ? "line-through text-gray-400"
-                      : ""
-                  }`}
-                >
-                  {task.title}
-                </span>
-              )}
+            <div>
+              <p
+                className={`font-medium ${
+                  task.completed ? "line-through text-gray-400" : ""
+                }`}
+              >
+                {task.title}
+              </p>
 
-              {task.dueDate && (
-                <span className="text-xs text-gray-400">
-                  Due: {new Date(task.dueDate).toLocaleDateString()}
-                </span>
-              )}
+              <p className="text-sm text-gray-400">
+                {task.dueDate || "No due date"} • {task.priority}
+              </p>
             </div>
 
-            <div className="flex items-center gap-2 ml-3">
-              <span className="text-xs px-2 py-1 rounded bg-gray-100">
-                {task.priority}
-              </span>
-
+            <div className="flex gap-2">
               <button
                 onClick={() => toggleTask(task.id)}
-                className="text-sm"
+                className="text-sm border px-2 rounded"
               >
-                ✓
+                {task.completed ? "Undo" : "Done"}
+              </button>
+
+              <button
+                onClick={() => deleteTask(task.id)}
+                className="text-sm border px-2 rounded"
+              >
+                Delete
               </button>
             </div>
           </div>
         ))}
-
-        {sortedTasks.length === 0 && (
-          <div className="text-gray-400 text-sm">
-            No tasks found
-          </div>
-        )}
       </div>
     </div>
   );
