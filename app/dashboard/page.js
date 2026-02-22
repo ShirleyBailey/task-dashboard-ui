@@ -12,6 +12,8 @@ export default function Page() {
     const [dueDate, setDueDate] = useState("");
     const [priority, setPriority] = useState("medium");
 
+    const [error, setError] = useState("");
+
     const [priorityFilter, setPriorityFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
 
@@ -34,16 +36,39 @@ export default function Page() {
     }, [tasks]);
 
     /* ---------------- ACTIONS ---------------- */
-
     const addTask = () => {
-        if (!title.trim()) return;
+        const trimmedTitle = title.trim();
+
+        if (!trimmedTitle) {
+            setError("Task title is required");
+            return;
+        }
+
+        if (trimmedTitle.length < 3) {
+            setError("Minimum 3 characters");
+            return;
+        }
+
+        if (trimmedTitle.length > 50) {
+            setError("Maximum 50 characters");
+            return;
+        }
+
+        const duplicate = tasks.some(
+            task => task.title.toLowerCase() === trimmedTitle.toLowerCase()
+        );
+
+        if (duplicate) {
+            setError("Duplicate task");
+            return;
+        }
 
         const newTask = {
             id: crypto.randomUUID(),
-            title: title.trim(),
+            title: trimmedTitle,
+            completed: false,
             dueDate,
             priority,
-            completed: false,
         };
 
         setTasks(prev => [...prev, newTask]);
@@ -51,6 +76,7 @@ export default function Page() {
         setTitle("");
         setDueDate("");
         setPriority("medium");
+        setError("");
     };
 
     const toggleTask = (id) => {
@@ -145,6 +171,11 @@ export default function Page() {
                     >
                         Add
                     </button>
+                    {error && (
+                        <div className="text-red-500 text-sm mt-2 animate-fade">
+                            {error}
+                        </div>
+                    )}
                 </div>
 
                 {/* PRIORITY FILTER */}
