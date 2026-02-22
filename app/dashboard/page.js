@@ -119,6 +119,18 @@ export default function Page() {
 
     /* ---------------- FILTER ---------------- */
 
+    const isOverdue = (task) => {
+        if (!task.dueDate) return false;
+
+        const today = new Date();
+        const due = new Date(task.dueDate);
+
+        today.setHours(0, 0, 0, 0);
+        due.setHours(0, 0, 0, 0);
+
+        return due < today && !task.completed;
+    };
+
     const filteredTasks = tasks.filter(task => {
 
         if (priorityFilter !== "all" && task.priority !== priorityFilter)
@@ -271,8 +283,7 @@ export default function Page() {
                                         }}
                                     />
                                 ) : (
-                                    <div className={`font-medium ${task.completed ? "line-through opacity-40" : ""
-                                        }`}>
+                                    <div className={`font-medium ${isOverdue(task) ? "text-red-500" : ""}`}>
                                         {task.title}
                                     </div>
                                 )}
@@ -287,6 +298,12 @@ export default function Page() {
                                 >
                                     {task.priority}
                                 </span>
+
+                                {isOverdue(task) && (
+                                    <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-600">
+                                        overdue
+                                    </span>
+                                )}
                             </div>
 
                             {task.dueDate && (
