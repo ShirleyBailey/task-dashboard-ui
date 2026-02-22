@@ -17,29 +17,30 @@ export default function Page() {
     const [editingId, setEditingId] = useState(null);
     const [editingTitle, setEditingTitle] = useState("");
 
-    /* ---------------- LOAD ---------------- */
+    /* Load tasks from localStorage */
 
     useEffect(() => {
         const storedTasks = localStorage.getItem("tasks");
+
         if (storedTasks) {
             setTasks(JSON.parse(storedTasks));
         }
     }, []);
 
-    /* ---------------- SAVE ---------------- */
+    /* Persist tasks */
 
     useEffect(() => {
         localStorage.setItem("tasks", JSON.stringify(tasks));
     }, [tasks]);
 
-    /* ---------------- TASK ACTIONS ---------------- */
+    /* Task actions */
 
     const addTask = () => {
         if (!title.trim()) return;
 
         const newTask = {
             id: crypto.randomUUID(),
-            title: title,
+            title,
             dueDate,
             priority,
             completed: false,
@@ -67,7 +68,7 @@ export default function Page() {
         setTasks(prev => prev.filter(task => task.id !== id));
     };
 
-    /* ---------------- EDIT ---------------- */
+    /* Editing */
 
     const startEdit = (task) => {
         setEditingId(task.id);
@@ -94,7 +95,7 @@ export default function Page() {
         setEditingTitle("");
     };
 
-    /* ---------------- FILTER ---------------- */
+    /* Filtering */
 
     const filteredTasks = tasks.filter(task => {
         if (priorityFilter !== "all" && task.priority !== priorityFilter)
@@ -109,9 +110,11 @@ export default function Page() {
         return true;
     });
 
-    /* ---------------- SORT ---------------- */
+    /* Sorting */
 
     const sortedTasks = [...filteredTasks].sort((a, b) => {
+
+        /* Ensure completed tasks are always at the bottom */
 
         if (a.completed !== b.completed) {
             return a.completed ? 1 : -1;
@@ -133,19 +136,19 @@ export default function Page() {
         if (sortBy === "dueDate") {
             if (!a.dueDate) return 1;
             if (!b.dueDate) return -1;
+
             return new Date(a.dueDate) - new Date(b.dueDate);
         }
 
         return 0;
     });
 
-    /* ---------------- UI ---------------- */
-
     return (
         <div className="p-10 max-w-3xl">
             <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-            {/* ADD TASK */}
+            {/* Task input */}
+
             <div className="flex gap-2 mb-4">
                 <input
                     className="border px-3 py-2 rounded w-full"
@@ -179,49 +182,56 @@ export default function Page() {
                 </button>
             </div>
 
-            {/* PRIORITY FILTER */}
+            {/* Priority filter */}
+
             <div className="flex gap-2 mb-4">
                 {["all", "high", "medium", "low"].map(p => (
                     <button
                         key={p}
                         onClick={() => setPriorityFilter(p)}
-                        className={`px-3 py-1 rounded border ${priorityFilter === p ? "bg-black text-white" : ""
-                            }`}
+                        className={`px-3 py-1 rounded border ${
+                            priorityFilter === p ? "bg-black text-white" : ""
+                        }`}
                     >
                         {p}
                     </button>
                 ))}
             </div>
 
-            {/* STATUS FILTER */}
+            {/* Status filter */}
+
             <div className="flex gap-2 mb-4">
                 {["all", "active", "completed"].map(s => (
                     <button
                         key={s}
                         onClick={() => setStatusFilter(s)}
-                        className={`px-3 py-1 rounded border ${statusFilter === s ? "bg-black text-white" : ""
-                            }`}
+                        className={`px-3 py-1 rounded border ${
+                            statusFilter === s ? "bg-black text-white" : ""
+                        }`}
                     >
                         {s}
                     </button>
                 ))}
             </div>
 
-            {/* SORT */}
+            {/* Sorting */}
+
             <div className="flex gap-2 mb-6">
                 {["newest", "oldest", "priority", "dueDate"].map(s => (
                     <button
                         key={s}
                         onClick={() => setSortBy(s)}
-                        className={`px-3 py-1 rounded border ${sortBy === s ? "bg-black text-white" : ""
-                            }`}
+                        className={`px-3 py-1 rounded border ${
+                            sortBy === s ? "bg-black text-white" : ""
+                        }`}
                     >
                         {s}
                     </button>
                 ))}
             </div>
 
-            {/* TASK LIST */}
+            {/* Task list */}
+
             <div className="space-y-2">
                 {sortedTasks.length === 0 && (
                     <p className="text-gray-400">No tasks found</p>
@@ -230,10 +240,9 @@ export default function Page() {
                 {sortedTasks.map(task => (
                     <div
                         key={task.id}
-                        className={`p-4 rounded-xl border bg-white shadow-sm
-    transition-all duration-200 hover:shadow-md hover:-translate-y-0.5`}
+                        className="p-4 rounded-xl border bg-white shadow-sm
+                        transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
                     >
-
                         <div className="flex items-center gap-2">
                             <input
                                 type="checkbox"
@@ -248,33 +257,35 @@ export default function Page() {
                                     className="border rounded px-2 py-1 w-full"
                                 />
                             ) : (
-                                <div className={`font-medium ${task.completed ? "line-through text-gray-400" : ""
-                                    }`}>
+                                <div className={`font-medium ${
+                                    task.completed ? "line-through text-gray-400" : ""
+                                }`}>
                                     {task.title}
                                 </div>
                             )}
                         </div>
 
-                        <div className="text-sm text-gray-500 mt-1">
+                        <div className="flex gap-2 mt-2">
                             {task.dueDate && (
                                 <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
                                     Due: {task.dueDate}
                                 </span>
-                            )}{" "}
+                            )}
+
                             <span
-                                className={`text-xs px-2 py-1 rounded-full font-medium ${task.priority === "high"
-                                    ? "bg-red-100 text-red-600"
-                                    : task.priority === "medium"
+                                className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                    task.priority === "high"
+                                        ? "bg-red-100 text-red-600"
+                                        : task.priority === "medium"
                                         ? "bg-yellow-100 text-yellow-700"
                                         : "bg-green-100 text-green-600"
-                                    }`}
+                                }`}
                             >
                                 {task.priority}
                             </span>
                         </div>
 
-                        <div className="flex gap-2 mt-2">
-
+                        <div className="flex gap-2 mt-3">
                             {editingId === task.id ? (
                                 <>
                                     <button onClick={() => saveEdit(task.id)}>Save</button>
@@ -286,7 +297,6 @@ export default function Page() {
                                     <button onClick={() => deleteTask(task.id)}>Delete</button>
                                 </>
                             )}
-
                         </div>
                     </div>
                 ))}
