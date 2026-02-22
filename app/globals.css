@@ -16,31 +16,6 @@
   animation: fade 0.25s ease-out;
 }
 
-/* Tailwind Dark Mode */
-@layer base {
-  body {
-    background-color: #fff;
-    color: #333;
-  }
-
-  .dark body {
-    background-color: #333;
-    color: #f8f8f8;
-  }
-
-  .dark .bg-white {
-    background-color: #444;
-  }
-
-  .dark .border {
-    border-color: #666;
-  }
-
-  .dark .text-gray-400 {
-    color: #bbb;
-  }
-}
-
 .dark {
   background-color: #1a1a1a;
   color: white;
