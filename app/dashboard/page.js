@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 
 export default function Page() {
     const [tasks, setTasks] = useState([]);
+
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState("");
     const [priority, setPriority] = useState("medium");
 
     const [priorityFilter, setPriorityFilter] = useState("all");
     const [statusFilter, setStatusFilter] = useState("all");
+
+    const [sortBy, setSortBy] = useState("newest");
 
     const [editingId, setEditingId] = useState(null);
     const [editingTitle, setEditingTitle] = useState("");
@@ -18,19 +21,8 @@ export default function Page() {
 
     useEffect(() => {
         const storedTasks = localStorage.getItem("tasks");
-
         if (storedTasks) {
-            try {
-                const parsed = JSON.parse(storedTasks);
-
-                if (Array.isArray(parsed)) {
-                    setTasks(parsed);
-                } else {
-                    localStorage.removeItem("tasks"); // corrupted data cleanup
-                }
-            } catch {
-                localStorage.removeItem("tasks");
-            }
+            setTasks(JSON.parse(storedTasks));
         }
     }, []);
 
@@ -48,14 +40,17 @@ export default function Page() {
         const newTask = {
             id: crypto.randomUUID(),
             title: title,
-            dueDate: dueDate,
-            priority: priority,
-            completed: false
-        }
+            dueDate,
+            priority,
+            completed: false,
+            createdAt: Date.now(),
+        };
 
         setTasks(prev => [...prev, newTask]);
+
         setTitle("");
         setDueDate("");
+        setPriority("medium");
     };
 
     const toggleTask = (id) => {
@@ -72,7 +67,16 @@ export default function Page() {
         setTasks(prev => prev.filter(task => task.id !== id));
     };
 
+    /* ---------------- EDIT ---------------- */
+
+    const startEdit = (task) => {
+        setEditingId(task.id);
+        setEditingTitle(task.title);
+    };
+
     const saveEdit = (id) => {
+        if (!editingTitle.trim()) return;
+
         setTasks(prev =>
             prev.map(task =>
                 task.id === id
@@ -85,23 +89,9 @@ export default function Page() {
         setEditingTitle("");
     };
 
-    const startEdit = (task) => {
-        setEditingId(task.id);
-        setEditingTitle(task.title);
-    };
-
     const cancelEdit = () => {
         setEditingId(null);
         setEditingTitle("");
-    };
-
-    const isOverdue = (task) => {
-        if (!task.dueDate) return false;
-
-        const today = new Date();
-        const due = new Date(task.dueDate);
-
-        return due < today && !task.completed;
     };
 
     /* ---------------- FILTER ---------------- */
@@ -110,27 +100,47 @@ export default function Page() {
         if (priorityFilter !== "all" && task.priority !== priorityFilter)
             return false;
 
-        if (statusFilter === "active" && task.completed) return false;
-        if (statusFilter === "completed" && !task.completed) return false;
+        if (statusFilter === "active" && task.completed)
+            return false;
 
+        if (statusFilter === "completed" && !task.completed)
+            return false;
 
         return true;
     });
 
+    /* ---------------- SORT ---------------- */
 
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter(t => t.completed).length;
-    const activeTasks = totalTasks - completedTasks;
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
+        if (sortBy === "newest") {
+            return b.createdAt - a.createdAt;
+        }
 
-    const progress = totalTasks === 0
-        ? 0
-        : Math.round((completedTasks / totalTasks) * 100);
+        if (sortBy === "oldest") {
+            return a.createdAt - b.createdAt;
+        }
+
+        if (sortBy === "priority") {
+            const order = { high: 3, medium: 2, low: 1 };
+            return order[b.priority] - order[a.priority];
+        }
+
+        if (sortBy === "dueDate") {
+            if (!a.dueDate) return 1;
+            if (!b.dueDate) return -1;
+            return new Date(a.dueDate) - new Date(b.dueDate);
+        }
+
+        return 0;
+    });
+
     /* ---------------- UI ---------------- */
 
     return (
         <div className="p-10 max-w-3xl">
             <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
+            {/* ADD TASK */}
             <div className="flex gap-2 mb-4">
                 <input
                     className="border px-3 py-2 rounded w-full"
@@ -164,105 +174,88 @@ export default function Page() {
                 </button>
             </div>
 
+            {/* PRIORITY FILTER */}
             <div className="flex gap-2 mb-4">
                 {["all", "high", "medium", "low"].map(p => (
                     <button
                         key={p}
                         onClick={() => setPriorityFilter(p)}
-                        className={`px-3 py-1 rounded border ${priorityFilter === p ? "bg-black text-white" : ""}`}
+                        className={`px-3 py-1 rounded border ${
+                            priorityFilter === p ? "bg-black text-white" : ""
+                        }`}
                     >
                         {p}
                     </button>
                 ))}
             </div>
 
-            <div className="flex gap-2 mb-6">
+            {/* STATUS FILTER */}
+            <div className="flex gap-2 mb-4">
                 {["all", "active", "completed"].map(s => (
                     <button
                         key={s}
                         onClick={() => setStatusFilter(s)}
-                        className={`px-3 py-1 rounded border ${statusFilter === s ? "bg-black text-white" : ""}`}
+                        className={`px-3 py-1 rounded border ${
+                            statusFilter === s ? "bg-black text-white" : ""
+                        }`}
                     >
                         {s}
                     </button>
                 ))}
             </div>
 
-            <div className="border rounded p-4 mb-6">
-                <div className="flex justify-between text-sm">
-                    <span>Total: {totalTasks}</span>
-                    <span>Active: {activeTasks}</span>
-                    <span>Done: {completedTasks}</span>
-                </div>
-
-                <div className="w-full bg-gray-200 h-2 rounded mt-2">
-                    <div
-                        className="bg-black h-2 rounded transition-all"
-                        style={{ width: `${progress}%` }}
-                    />
-                </div>
-
-                <div className="text-xs text-gray-500 mt-1">
-                    Progress: {progress}%
-                </div>
+            {/* SORT */}
+            <div className="flex gap-2 mb-6">
+                {["newest", "oldest", "priority", "dueDate"].map(s => (
+                    <button
+                        key={s}
+                        onClick={() => setSortBy(s)}
+                        className={`px-3 py-1 rounded border ${
+                            sortBy === s ? "bg-black text-white" : ""
+                        }`}
+                    >
+                        {s}
+                    </button>
+                ))}
             </div>
 
+            {/* TASK LIST */}
             <div className="space-y-2">
-                {filteredTasks.length === 0 && (
+                {sortedTasks.length === 0 && (
                     <p className="text-gray-400">No tasks found</p>
                 )}
 
-                {tasks.map(task => (
-                    <div
-                        key={task.id}
-                        className={`border p-3 rounded ${isOverdue(task) ? "border-red-500 bg-red-50" : ""
-                            }`}
-                    >
+                {sortedTasks.map(task => (
+                    <div key={task.id} className="border p-3 rounded">
 
-                        {editingId === task.id ? (
+                        <div className="flex items-center gap-2">
                             <input
-                                value={editingTitle}
-                                onChange={(e) => setEditingTitle(e.target.value)}
-                                className="border rounded px-2 py-1 w-full"
+                                type="checkbox"
+                                checked={task.completed}
+                                onChange={() => toggleTask(task.id)}
                             />
-                        ) : (
-                            <>
-                                <div className="font-medium">{task.title}</div>
 
-                                {task.dueDate && (
-                                    <div className="text-sm text-gray-400">
-                                        Due: {task.dueDate}
-                                    </div>
-                                )}
-                            </>
-                        )}
+                            {editingId === task.id ? (
+                                <input
+                                    value={editingTitle}
+                                    onChange={(e) => setEditingTitle(e.target.value)}
+                                    className="border rounded px-2 py-1 w-full"
+                                />
+                            ) : (
+                                <div className={`font-medium ${
+                                    task.completed ? "line-through text-gray-400" : ""
+                                }`}>
+                                    {task.title}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="text-sm text-gray-500 mt-1">
+                            {task.dueDate && `Due: ${task.dueDate}`}{" "}
+                            | Priority: {task.priority}
+                        </div>
 
                         <div className="flex gap-2 mt-2">
-                            <div className="flex items-center gap-3">
-
-                                <button
-                                    onClick={() => toggleTask(task.id)}
-                                    className={`w-5 h-5 rounded border flex items-center justify-center
-        ${task.completed ? "bg-black text-white border-black" : "border-gray-400"}`}
-                                >
-                                    {task.completed && "✓"}
-                                </button>
-
-                                {editingId === task.id ? (
-                                    <input
-                                        value={editingTitle}
-                                        onChange={(e) => setEditingTitle(e.target.value)}
-                                        className="border rounded px-2 py-1 w-full"
-                                    />
-                                ) : (
-                                    <div
-                                        className={`font-medium transition-all
-            ${task.completed ? "line-through text-gray-400" : ""}`}
-                                    >
-                                        {task.title}
-                                    </div>
-                                )}
-                            </div>
 
                             {editingId === task.id ? (
                                 <>
@@ -275,12 +268,11 @@ export default function Page() {
                                     <button onClick={() => deleteTask(task.id)}>Delete</button>
                                 </>
                             )}
-                        </div>
 
+                        </div>
                     </div>
                 ))}
             </div>
-
         </div>
     );
 }
