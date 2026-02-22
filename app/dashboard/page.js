@@ -157,10 +157,10 @@ export default function Page() {
 
                 <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
-                <div className="flex gap-4 mb-6 text-sm">
-                    <div>Total: {totalCount}</div>
-                    <div>Active: {activeCount}</div>
-                    <div>Completed: {completedCount}</div>
+                <div className="flex gap-4 text-sm text-gray-500 mb-4">
+                    <span>Total: {totalCount}</span>
+                    <span>Active: {activeCount}</span>
+                    <span>Completed: {completedCount}</span>
                 </div>
                 {/* INPUTS */}
 
@@ -236,6 +236,13 @@ export default function Page() {
                         </button>
                     ))}
                 </div>
+
+                <button
+                    onClick={() => setTasks(tasks.filter(t => !t.completed))}
+                    className="text-sm text-red-500 hover:underline"
+                >
+                    Clear Completed
+                </button>
 
                 {/* TASK LIST */}
 
