@@ -9,6 +9,7 @@ const handleKeyDown = (e) => {
 
 export default function Page() {
     const [tasks, setTasks] = useState([]);
+    const [draggedTask, setDraggedTask] = useState(null);
     const [title, setTitle] = useState("");
     const [dueDate, setDueDate] = useState("");
     const [priority, setPriority] = useState("medium");
@@ -112,6 +113,28 @@ export default function Page() {
     const deleteTask = (id) => {
         setTasks(prev => prev.filter(task => task.id !== id));
         showToast("Task deleted 🗑️");
+    };
+
+    const handleDragStart = (task) => {
+        setDraggedTask(task);
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = (targetTask) => {
+        if (!draggedTask || draggedTask.id === targetTask.id) return;
+
+        const updatedTasks = [...tasks];
+
+        const fromIndex = updatedTasks.findIndex(t => t.id === draggedTask.id);
+        const toIndex = updatedTasks.findIndex(t => t.id === targetTask.id);
+
+        const [movedTask] = updatedTasks.splice(fromIndex, 1);
+        updatedTasks.splice(toIndex, 0, movedTask);
+
+        setTasks(updatedTasks);
     };
 
     const startEdit = (task) => {
@@ -361,11 +384,16 @@ export default function Page() {
                         {sortedTasks.map(task => (
                             <motion.div
                                 key={task.id}
+                                draggable
+                                onDragStart={() => handleDragStart(task)}
+                                onDragOver={handleDragOver}
+                                onDrop={() => handleDrop(task)}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
                                 transition={{ duration: 0.2 }}
-                                className="border rounded-xl p-4 hover:shadow-sm transition bg-white"
+                                className="border rounded-xl p-4 bg-white transition
+               hover:shadow-md hover:-translate-y-0.5"
                             >
 
                                 <div className="flex justify-between items-center">
