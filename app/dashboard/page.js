@@ -22,6 +22,7 @@ export default function Page() {
     const [toast, setToast] = useState(null);
 
     const [search, setSearch] = useState("");
+    const [sortType, setSortType] = useState("newest");
 
     const totalCount = tasks.length;
     const completedCount = tasks.filter(t => t.completed).length;
@@ -77,6 +78,7 @@ export default function Page() {
             completed: false,
             dueDate,
             priority,
+            createdAt: Date.now(),
         };
 
         setTasks(prev => [...prev, newTask]);
@@ -155,6 +157,25 @@ export default function Page() {
         if (statusFilter === "completed" && !task.completed) return false;
 
         return true;
+    });
+
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
+
+        if (sortType === "newest")
+            return b.createdAt - a.createdAt;
+
+        if (sortType === "oldest")
+            return a.createdAt - b.createdAt;
+
+        if (sortType === "priority") {
+            const order = { high: 0, medium: 1, low: 2 };
+            return order[a.priority] - order[b.priority];
+        }
+
+        if (sortType === "dueDate")
+            return new Date(a.dueDate || 0) - new Date(b.dueDate || 0);
+
+        return 0;
     });
 
     const getDueStatus = (dueDate) => {
@@ -252,47 +273,76 @@ export default function Page() {
                     )}
                 </div>
 
-                {/* PRIORITY FILTER */}
+                <div className="space-y-4 mb-6">
 
-                <div className="flex gap-2 mb-3">
-                    {["all", "high", "medium", "low"].map(p => (
-                        <button
-                            key={p}
-                            onClick={() => setPriorityFilter(p)}
-                            className={`px-3 py-1 rounded-lg border transition ${priorityFilter === p
-                                ? "bg-black text-white"
-                                : "hover:bg-gray-100"
-                                }`}
-                        >
-                            {p}
-                        </button>
-                    ))}
+                    <section>
+                        <div className="text-xs text-gray-500 mb-1">Priority</div>
+                        <div className="flex gap-2">
+                            {["all", "high", "medium", "low"].map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => setPriorityFilter(p)}
+                                    className={`px-3 py-1 rounded-lg border text-sm transition
+                        ${priorityFilter === p
+                                            ? "bg-black text-white"
+                                            : "hover:bg-gray-100"
+                                        }`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section>
+                        <div className="text-xs text-gray-500 mb-1">Status</div>
+                        <div className="flex gap-2">
+                            {["all", "active", "completed"].map(s => (
+                                <button
+                                    key={s}
+                                    onClick={() => setStatusFilter(s)}
+                                    className={`px-3 py-1 rounded-lg border text-sm transition
+                        ${statusFilter === s
+                                            ? "bg-black text-white"
+                                            : "hover:bg-gray-100"
+                                        }`}
+                                >
+                                    {s}
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section>
+                        <div className="text-xs text-gray-500 mb-1">Sort</div>
+                        <div className="flex gap-2">
+                            {["newest", "oldest", "priority", "dueDate"].map(type => (
+                                <button
+                                    key={type}
+                                    onClick={() => setSortType(type)}
+                                    className={`px-3 py-1 rounded-lg border text-sm transition
+                        ${sortType === type
+                                            ? "bg-black text-white"
+                                            : "hover:bg-gray-100"
+                                        }`}
+                                >
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                    </section>
+
                 </div>
 
-                {/* STATUS FILTER */}
-
-                <div className="flex gap-2 mb-6">
-                    {["all", "active", "completed"].map(s => (
-                        <button
-                            key={s}
-                            onClick={() => setStatusFilter(s)}
-                            className={`px-3 py-1 rounded-lg border transition ${statusFilter === s
-                                ? "bg-black text-white"
-                                : "hover:bg-gray-100"
-                                }`}
-                        >
-                            {s}
-                        </button>
-                    ))}
-
+                <div className="mb-6">
                     <input
-                        className="border px-3 py-2 rounded flex-1"
+                        className="w-full bg-gray-100 px-4 py-2 rounded-full border-none
+                   focus:outline-none focus:ring-2 focus:ring-black/10"
                         placeholder="Search tasks..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
-
 
                 <button
                     onClick={() => setTasks(tasks.filter(t => !t.completed))}
@@ -305,7 +355,7 @@ export default function Page() {
 
                 <div className="space-y-3">
 
-                    {filteredTasks.length === 0 && (
+                    {sortedTasks.length === 0 && (
                         <div className="border rounded-lg p-6 text-center text-gray-400">
                             <div className="text-lg mb-1">Nothing here yet</div>
                             <div className="text-sm">
@@ -314,7 +364,7 @@ export default function Page() {
                         </div>
                     )}
 
-                    {filteredTasks.map(task => (
+                    {sortedTasks.map(task => (
                         <div
                             key={task.id}
                             className="border rounded-xl p-4 hover:shadow-sm transition bg-white"
